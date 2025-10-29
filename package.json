@@ -1,0 +1,56 @@
+{
+	"name": "n8n-nodes-onprintshop",
+	"version": "1.0.0",
+	"description": "n8n node for OnPrintShop e-commerce API",
+	"license": "MIT",
+	"homepage": "https://github.com/cderamos-2ct/n8n-nodes-onprintshop",
+	"keywords": [
+		"n8n-community-node-package",
+		"onprintshop",
+		"ecommerce",
+		"printing",
+		"orders"
+	],
+	"author": {
+		"name": "cderamos-2ct",
+		"email": "christian@visualgraphx.com"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/cderamos-2ct/n8n-nodes-onprintshop.git"
+	},
+	"scripts": {
+		"build": "n8n-node build",
+		"build:watch": "tsc --watch",
+		"dev": "n8n-node dev",
+		"lint": "n8n-node lint",
+		"lint:fix": "n8n-node lint --fix",
+		"release": "n8n-node release",
+		"prepublishOnly": "n8n-node prerelease"
+	},
+	"files": [
+		"dist"
+	],
+	"n8n": {
+		"n8nNodesApiVersion": 1,
+		"strict": true,
+		"credentials": [
+			"dist/credentials/OnPrintShopApi.credentials.js"
+		],
+		"nodes": [
+			"dist/nodes/OnPrintShop/OnPrintShop.node.js",
+			"dist/nodes/OnPrintShop/OnPrintShopShipmentJson.node.js"
+		]
+	},
+	"devDependencies": {
+		"@n8n/node-cli": "*",
+		"@types/node": "^24.9.2",
+		"eslint": "9.32.0",
+		"prettier": "3.6.2",
+		"release-it": "^19.0.4",
+		"typescript": "5.9.2"
+	},
+	"peerDependencies": {
+		"n8n-workflow": "*"
+	}
+}
