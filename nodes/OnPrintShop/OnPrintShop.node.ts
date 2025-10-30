@@ -5855,19 +5855,32 @@ export class OnPrintShop implements INodeType {
 							if (qp.customer_id !== undefined && qp.customer_id !== '') variables.customer_id = Number(qp.customer_id);
 							if (qp.order_type) variables.order_type = qp.order_type;
 
-							const responseData = await this.helpers.request({ method: 'POST', url: `${baseUrl}/api/`, headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, body: { query: query.trim(), variables }, json: true });
+							try {
+								const responseData = await this.helpers.request({ method: 'POST', url: `${baseUrl}/api/`, headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, body: { query: query.trim(), variables }, json: true });
 
-							if (responseData && responseData.data && responseData.data.orders) {
-								const orders = responseData.data.orders.orders || [];
-								totalOrders = responseData.data.orders.totalOrders;
-								for (const o of orders) { if (o && o.product) allDetails.push(o.product); }
-								offset += pageSize; pageCount++; hasMorePages = orders.length === pageSize;
-								const responseTime = Date.now() - requestStartTime;
-								if (responseTime < 100) adaptiveDelay = Math.max(25, adaptiveDelay * 0.8); else if (responseTime > 500) adaptiveDelay = Math.min(1000, adaptiveDelay * 1.25);
-								if (hasMorePages) await new Promise(r => setTimeout(r, Math.round(adaptiveDelay)));
-							} else if (responseData && responseData.errors) {
-								throw new NodeOperationError(this.getNode(), `GraphQL Error: ${JSON.stringify(responseData.errors)}`);
-							} else { hasMorePages = false; }
+								if (responseData && responseData.data && responseData.data.orders) {
+									const orders = responseData.data.orders.orders || [];
+									totalOrders = responseData.data.orders.totalOrders;
+									for (const o of orders) { if (o && o.product) allDetails.push(o.product); }
+									offset += pageSize; pageCount++; hasMorePages = orders.length === pageSize;
+									const responseTime = Date.now() - requestStartTime;
+									if (responseTime < 100) adaptiveDelay = Math.max(25, adaptiveDelay * 0.8); else if (responseTime > 500) adaptiveDelay = Math.min(1000, adaptiveDelay * 1.25);
+									if (hasMorePages) await new Promise(r => setTimeout(r, Math.round(adaptiveDelay)));
+								} else if (responseData && responseData.errors) {
+									throw new NodeOperationError(this.getNode(), `GraphQL Error: ${JSON.stringify(responseData.errors)}`);
+								} else { hasMorePages = false; }
+							} catch (error) {
+								// Handle rate limiting or server errors (429, 502, 503)
+								if (error.statusCode === 429 || error.statusCode === 502 || error.statusCode === 503) {
+									// Rate limited or server error - wait longer and retry
+									adaptiveDelay = Math.min(1000, adaptiveDelay * 2); // Increase delay on error
+									const waitTime = error.statusCode === 503 ? 3000 : 2000; // Wait 3s for 503, 2s for others
+									await new Promise(resolve => setTimeout(resolve, waitTime));
+									continue; // Retry the same page
+								} else {
+									throw error; // Re-throw other errors
+								}
+							}
 						}
 						returnData.push(...allDetails);
 					} else {
@@ -5936,19 +5949,32 @@ export class OnPrintShop implements INodeType {
 							if (qp.customer_id !== undefined && qp.customer_id !== '') variables.customer_id = Number(qp.customer_id);
 							if (qp.order_type) variables.order_type = qp.order_type;
 
-							const responseData = await this.helpers.request({ method: 'POST', url: `${baseUrl}/api/`, headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, body: { query: query.trim(), variables }, json: true });
+							try {
+								const responseData = await this.helpers.request({ method: 'POST', url: `${baseUrl}/api/`, headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, body: { query: query.trim(), variables }, json: true });
 
-							if (responseData && responseData.data && responseData.data.orders) {
-								const orders = responseData.data.orders.orders || [];
-								totalOrders = responseData.data.orders.totalOrders;
-								for (const o of orders) { if (o && o.shipment_detail) allShipments.push(o.shipment_detail); }
-								offset += pageSize; pageCount++; hasMorePages = orders.length === pageSize;
-								const responseTime = Date.now() - requestStartTime;
-								if (responseTime < 100) adaptiveDelay = Math.max(25, adaptiveDelay * 0.8); else if (responseTime > 500) adaptiveDelay = Math.min(1000, adaptiveDelay * 1.25);
-								if (hasMorePages) await new Promise(r => setTimeout(r, Math.round(adaptiveDelay)));
-							} else if (responseData && responseData.errors) {
-								throw new NodeOperationError(this.getNode(), `GraphQL Error: ${JSON.stringify(responseData.errors)}`);
-							} else { hasMorePages = false; }
+								if (responseData && responseData.data && responseData.data.orders) {
+									const orders = responseData.data.orders.orders || [];
+									totalOrders = responseData.data.orders.totalOrders;
+									for (const o of orders) { if (o && o.shipment_detail) allShipments.push(o.shipment_detail); }
+									offset += pageSize; pageCount++; hasMorePages = orders.length === pageSize;
+									const responseTime = Date.now() - requestStartTime;
+									if (responseTime < 100) adaptiveDelay = Math.max(25, adaptiveDelay * 0.8); else if (responseTime > 500) adaptiveDelay = Math.min(1000, adaptiveDelay * 1.25);
+									if (hasMorePages) await new Promise(r => setTimeout(r, Math.round(adaptiveDelay)));
+								} else if (responseData && responseData.errors) {
+									throw new NodeOperationError(this.getNode(), `GraphQL Error: ${JSON.stringify(responseData.errors)}`);
+								} else { hasMorePages = false; }
+							} catch (error) {
+								// Handle rate limiting or server errors (429, 502, 503)
+								if (error.statusCode === 429 || error.statusCode === 502 || error.statusCode === 503) {
+									// Rate limited or server error - wait longer and retry
+									adaptiveDelay = Math.min(1000, adaptiveDelay * 2); // Increase delay on error
+									const waitTime = error.statusCode === 503 ? 3000 : 2000; // Wait 3s for 503, 2s for others
+									await new Promise(resolve => setTimeout(resolve, waitTime));
+									continue; // Retry the same page
+								} else {
+									throw error; // Re-throw other errors
+								}
+							}
 						}
 						returnData.push(...allShipments);
 					} else {
@@ -5994,11 +6020,12 @@ export class OnPrintShop implements INodeType {
 					let adaptiveDelay = Math.max((queryParameters.pageDelay as number) || 50, 25);
 					let hasMorePages = true; let pageCount = 0; const maxPages = 100;
 
-					if (fetchAllPages) {
-						while (hasMorePages && pageCount < maxPages) {
-							const requestStartTime = Date.now();
-							const variables: IDataObject = { limit: pageSize, offset };
-							if (queryParameters.orders_id) variables.orders_id = Number(queryParameters.orders_id);
+				if (fetchAllPages) {
+					while (hasMorePages && pageCount < maxPages) {
+						const requestStartTime = Date.now();
+						const variables: IDataObject = { limit: pageSize, offset };
+						if (queryParameters.orders_id) variables.orders_id = Number(queryParameters.orders_id);
+						try {
 							const responseData = await this.helpers.request({ method: 'POST', url: `${baseUrl}/api/`, headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, body: { query: query.trim(), variables }, json: true });
 							if (responseData && responseData.data && responseData.data.orders) {
 								const orders = responseData.data.orders.orders || [];
@@ -6010,7 +6037,19 @@ export class OnPrintShop implements INodeType {
 							} else if (responseData && responseData.errors) {
 								throw new NodeOperationError(this.getNode(), `GraphQL Error: ${JSON.stringify(responseData.errors)}`);
 							} else { hasMorePages = false; }
+						} catch (error) {
+							// Handle rate limiting or server errors (429, 502, 503)
+							if (error.statusCode === 429 || error.statusCode === 502 || error.statusCode === 503) {
+								// Rate limited or server error - wait longer and retry
+								adaptiveDelay = Math.min(1000, adaptiveDelay * 2); // Increase delay on error
+								const waitTime = error.statusCode === 503 ? 3000 : 2000; // Wait 3s for 503, 2s for others
+								await new Promise(resolve => setTimeout(resolve, waitTime));
+								continue; // Retry the same page
+							} else {
+								throw error; // Re-throw other errors
+							}
 						}
+					}
 						returnData.push(...results);
 					} else {
 						const variables: IDataObject = {};
@@ -6047,13 +6086,14 @@ export class OnPrintShop implements INodeType {
 					let adaptiveDelay = Math.max((queryParameters.pageDelay as number) || 50, 25);
 					let hasMorePages = true; let pageCount = 0; const maxPages = 100;
 
-					if (fetchAllPages) {
-						while (hasMorePages && pageCount < maxPages) {
-							const requestStartTime = Date.now();
-							const variables: IDataObject = { limit: pageSize, offset };
-							const qp = queryParameters || {} as IDataObject;
-							if (qp.product_id) variables.product_id = Number(qp.product_id);
-							if (qp.products_sku) variables.products_sku = String(qp.products_sku);
+				if (fetchAllPages) {
+					while (hasMorePages && pageCount < maxPages) {
+						const requestStartTime = Date.now();
+						const variables: IDataObject = { limit: pageSize, offset };
+						const qp = queryParameters || {} as IDataObject;
+						if (qp.product_id) variables.product_id = Number(qp.product_id);
+						if (qp.products_sku) variables.products_sku = String(qp.products_sku);
+						try {
 							const responseData = await this.helpers.request({ method: 'POST', url: `${baseUrl}/api/`, headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, body: { query: query.trim(), variables }, json: true });
 							if (responseData && responseData.data && responseData.data.products) {
 								const products = responseData.data.products.products || [];
@@ -6065,7 +6105,19 @@ export class OnPrintShop implements INodeType {
 							} else if (responseData && responseData.errors) {
 								throw new NodeOperationError(this.getNode(), `GraphQL Error: ${JSON.stringify(responseData.errors)}`);
 							} else { hasMorePages = false; }
+						} catch (error) {
+							// Handle rate limiting or server errors (429, 502, 503)
+							if (error.statusCode === 429 || error.statusCode === 502 || error.statusCode === 503) {
+								// Rate limited or server error - wait longer and retry
+								adaptiveDelay = Math.min(1000, adaptiveDelay * 2); // Increase delay on error
+								const waitTime = error.statusCode === 503 ? 3000 : 2000; // Wait 3s for 503, 2s for others
+								await new Promise(resolve => setTimeout(resolve, waitTime));
+								continue; // Retry the same page
+							} else {
+								throw error; // Re-throw other errors
+							}
 						}
+					}
 						returnData.push(...results);
 					} else {
 						const variables: IDataObject = {};
@@ -6288,42 +6340,46 @@ export class OnPrintShop implements INodeType {
 				}
 
 				if (resource === 'customer' && operation === 'get') {
-					// Get customer by email
-					const email = this.getNodeParameter('email', i) as string;
-					const customerFieldsSelected = this.getNodeParameter('customerFields', i) as string[];
-					const addressFieldsSelected = this.getNodeParameter('addressFields', i) as string[];
+				// Get customer by email
+				const email = this.getNodeParameter('email', i) as string;
+				const customerFieldsSelected = this.getNodeParameter('customerFields', i) as string[];
+				const addressFieldsSelected = this.getNodeParameter('addressFields', i) as string[];
 
-					// Filter out special options and separators
-					const customerFields = customerFieldsSelected
-						.filter(field => !field.startsWith('SELECT_ALL_') && !field.startsWith('DESELECT_ALL_') && field !== 'SEPARATOR')
-						.join('\n\t\t\t\t\t\t\t');
+				// Filter out special options and separators
+				const validCustomerFields = customerFieldsSelected
+					.filter(field => !field.startsWith('SELECT_ALL_') && !field.startsWith('DESELECT_ALL_') && field !== 'SEPARATOR');
+				
+				// Ensure at least one field is selected (fallback to userid if empty)
+				const customerFields = validCustomerFields.length > 0 
+					? validCustomerFields.join('\n\t\t\t\t\t\t\t')
+					: 'userid';
 
-					// Build address fields string
-					let addressFields = '';
-					const validAddressFields = addressFieldsSelected
-						.filter(field => !field.startsWith('SELECT_ALL_') && !field.startsWith('DESELECT_ALL_') && field !== 'SEPARATOR');
-					
-					if (validAddressFields.length > 0) {
-						const addressFieldsStr = validAddressFields.join('\n\t\t\t\t\t\t\t\t');
-						addressFields = `
-							address_detail {
-								${addressFieldsStr}
-							}
-						`;
-					}
-
-					// Build the GraphQL query
-					const query = `
-						query customers ($email: String) {
-							customers (email: $email) {
-								customers {
-									${customerFields}
-									${addressFields}
-								}
-								totalCustomers
-							}
+				// Build address fields string
+				let addressFields = '';
+				const validAddressFields = addressFieldsSelected
+					.filter(field => !field.startsWith('SELECT_ALL_') && !field.startsWith('DESELECT_ALL_') && field !== 'SEPARATOR');
+				
+				if (validAddressFields.length > 0) {
+					const addressFieldsStr = validAddressFields.join('\n\t\t\t\t\t\t\t\t');
+					addressFields = `
+						address_detail {
+							${addressFieldsStr}
 						}
 					`;
+				}
+
+				// Build the GraphQL query
+				const query = `
+					query customers ($email: String) {
+						customers (email: $email) {
+							customers {
+								${customerFields}
+								${addressFields}
+							}
+							totalCustomers
+						}
+					}
+				`;
 
 					// Make the GraphQL request
 					const responseData = await this.helpers.request({
@@ -6379,41 +6435,48 @@ export class OnPrintShop implements INodeType {
 					const customerFieldsSelected = this.getNodeParameter('customerFieldsGetAll', i) as string[];
 					const addressFieldsSelected = this.getNodeParameter('addressFieldsGetAll', i) as string[];
 
-					const fetchAllPages = this.getNodeParameter('fetchAllPages', i) as boolean || false;
-					const pageSize = Math.min(queryParameters.pageSize as number || 250, 250); // Max 250 (API hard limit)
-					const pageDelay = Math.max(queryParameters.pageDelay as number || 50, 25); // Min 25ms, default 50ms
+			const fetchAllPages = this.getNodeParameter('fetchAllPages', i) as boolean || false;
+			const pageSize = Math.min(queryParameters.pageSize as number || 250, 250); // Max 250 (API hard limit)
+			const pageDelay = Math.max(queryParameters.pageDelay as number || 50, 25); // Min 25ms, default 50ms
+			
+			// Safe Mode flag (kept for timing/backoff only; does not alter selected fields)
+			const safeMode = (this.getNodeParameter('safeMode', i, false) as boolean) || fetchAllPages;
 
-					// Filter out special options and separators
-					const customerFields = customerFieldsSelected
-						.filter(field => !field.startsWith('SELECT_ALL_') && !field.startsWith('DESELECT_ALL_') && field !== 'SEPARATOR')
-						.join('\n\t\t\t\t\t\t\t');
+		// Filter out special options and separators
+		const validCustomerFields = customerFieldsSelected
+			.filter(field => !field.startsWith('SELECT_ALL_') && !field.startsWith('DESELECT_ALL_') && field !== 'SEPARATOR');
+		
+		// Always use the user's selected fields; fallback to userid if none selected
+		const customerFields = validCustomerFields.length > 0 
+			? validCustomerFields.join('\n\t\t\t\t\t\t\t')
+			: 'userid';
 
-					// Build address fields string
-					let addressFields = '';
-					const validAddressFields = addressFieldsSelected
-						.filter(field => !field.startsWith('SELECT_ALL_') && !field.startsWith('DESELECT_ALL_') && field !== 'SEPARATOR');
-					
-					if (validAddressFields.length > 0) {
-						const addressFieldsStr = validAddressFields.join('\n\t\t\t\t\t\t\t\t');
-						addressFields = `
-							address_detail {
-								${addressFieldsStr}
-							}
-						`;
-					}
+		// Always respect selected address fields (do not modify query shape)
+		let addressFields = '';
+		const validAddressFields = addressFieldsSelected
+			.filter(field => !field.startsWith('SELECT_ALL_') && !field.startsWith('DESELECT_ALL_') && field !== 'SEPARATOR');
+		
+		if (validAddressFields.length > 0) {
+			const addressFieldsStr = validAddressFields.join('\n\t\t\t\t\t\t\t\t');
+			addressFields = `
+				address_detail {
+					${addressFieldsStr}
+				}
+			`;
+		}
 
-					// Build the GraphQL query
-					const query = `
-						query customers ($email: String, $from_date: String, $to_date: String, $date_type: CustomerDateTypeEnum, $limit: Int, $offset: Int) {
-							customers (email: $email, from_date: $from_date, to_date: $to_date, date_type: $date_type, limit: $limit, offset: $offset) {
-								customers {
-									${customerFields}
-									${addressFields}
-								}
-								totalCustomers
-							}
+			// Build the GraphQL query
+			const query = `
+				query customers ($email: String, $from_date: String, $to_date: String, $date_type: CustomerDateTypeEnum, $limit: Int, $offset: Int) {
+					customers (email: $email, from_date: $from_date, to_date: $to_date, date_type: $date_type, limit: $limit, offset: $offset) {
+						customers {
+							${customerFields}
+							${addressFields}
 						}
-					`;
+						totalCustomers
+					}
+				}
+			`;
 
 					let allCustomers: IDataObject[] = [];
 					let totalCustomers = 0;
@@ -6488,17 +6551,18 @@ export class OnPrintShop implements INodeType {
 								} else {
 									hasMorePages = false;
 								}
-							} catch (error) {
-								// Handle rate limiting or server errors
-								if (error.statusCode === 429 || error.statusCode === 502) {
-									// Rate limited or server error - wait longer and retry
-									adaptiveDelay = Math.min(1000, adaptiveDelay * 2); // Increase delay on rate limit
-									await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay
-									continue; // Retry the same page
-								} else {
-									throw error; // Re-throw other errors
-								}
+						} catch (error) {
+							// Handle rate limiting or server errors (429, 502, 503)
+							if (error.statusCode === 429 || error.statusCode === 502 || error.statusCode === 503) {
+								// Rate limited or server error - wait longer and retry
+								adaptiveDelay = Math.min(1000, adaptiveDelay * 2); // Increase delay on error
+								const waitTime = error.statusCode === 503 ? 3000 : 2000; // Wait 3s for 503, 2s for others
+								await new Promise(resolve => setTimeout(resolve, waitTime));
+								continue; // Retry the same page
+							} else {
+								throw error; // Re-throw other errors
 							}
+						}
 						}
 						
 						if (pageCount >= maxPages) {
@@ -6972,56 +7036,56 @@ export class OnPrintShop implements INodeType {
 				const billingDetailFieldsSelected = this.getNodeParameter('billingDetailFieldsGetAll', i) as string[];
 				const shipmentDetailFieldsSelected = this.getNodeParameter('shipmentDetailFieldsGetAll', i) as string[];
 
-				const fetchAllPages = this.getNodeParameter('fetchAllPages', i) as boolean || false;
-				const pageSize = Math.min(queryParameters.pageSize as number || 250, 250); // Max 250 (API hard limit)
-				const pageDelay = Math.max(queryParameters.pageDelay as number || 50, 25); // Min 25ms, default 50ms
+			const fetchAllPages = this.getNodeParameter('fetchAllPages', i) as boolean || false;
+			const pageSize = Math.min(queryParameters.pageSize as number || 250, 250); // Max 250 (API hard limit)
+			const pageDelay = Math.max(queryParameters.pageDelay as number || 50, 25); // Min 25ms, default 50ms
+			
+			// Filter out special options and separators for each field group
+			const orderFields = orderFieldsSelected
+				.filter(field => !field.startsWith('SELECT_ALL') && !field.startsWith('DESELECT_ALL') && field !== 'SEPARATOR')
+				.join('\n\t\t\t\t\t\t\t');
 
-				// Filter out special options and separators for each field group
-				const orderFields = orderFieldsSelected
-					.filter(field => !field.startsWith('SELECT_ALL') && !field.startsWith('DESELECT_ALL') && field !== 'SEPARATOR')
-					.join('\n\t\t\t\t\t\t\t');
+			const customerFields = customerFieldsSelected
+				.filter(field => !field.startsWith('SELECT_ALL') && !field.startsWith('DESELECT_ALL') && field !== 'SEPARATOR')
+				.join('\n\t\t\t\t\t\t\t');
 
-				const customerFields = customerFieldsSelected
-					.filter(field => !field.startsWith('SELECT_ALL') && !field.startsWith('DESELECT_ALL') && field !== 'SEPARATOR')
-					.join('\n\t\t\t\t\t\t\t');
+			const productFields = productFieldsSelected
+				.filter(field => !field.startsWith('SELECT_ALL') && !field.startsWith('DESELECT_ALL') && field !== 'SEPARATOR')
+				.join('\n\t\t\t\t\t\t\t');
 
-				const productFields = productFieldsSelected
-					.filter(field => !field.startsWith('SELECT_ALL') && !field.startsWith('DESELECT_ALL') && field !== 'SEPARATOR')
-					.join('\n\t\t\t\t\t\t\t');
+			const blindDetailFields = blindDetailFieldsSelected
+				.filter(field => !field.startsWith('SELECT_ALL') && !field.startsWith('DESELECT_ALL') && field !== 'SEPARATOR')
+				.join('\n\t\t\t\t\t\t\t');
 
-				const blindDetailFields = blindDetailFieldsSelected
-					.filter(field => !field.startsWith('SELECT_ALL') && !field.startsWith('DESELECT_ALL') && field !== 'SEPARATOR')
-					.join('\n\t\t\t\t\t\t\t');
+			const deliveryDetailFields = deliveryDetailFieldsSelected
+				.filter(field => !field.startsWith('SELECT_ALL') && !field.startsWith('DESELECT_ALL') && field !== 'SEPARATOR')
+				.join('\n\t\t\t\t\t\t\t');
 
-				const deliveryDetailFields = deliveryDetailFieldsSelected
-					.filter(field => !field.startsWith('SELECT_ALL') && !field.startsWith('DESELECT_ALL') && field !== 'SEPARATOR')
-					.join('\n\t\t\t\t\t\t\t');
+			const billingDetailFields = billingDetailFieldsSelected
+				.filter(field => !field.startsWith('SELECT_ALL') && !field.startsWith('DESELECT_ALL') && field !== 'SEPARATOR')
+				.join('\n\t\t\t\t\t\t\t');
 
-				const billingDetailFields = billingDetailFieldsSelected
-					.filter(field => !field.startsWith('SELECT_ALL') && !field.startsWith('DESELECT_ALL') && field !== 'SEPARATOR')
-					.join('\n\t\t\t\t\t\t\t');
+			const shipmentDetailFields = shipmentDetailFieldsSelected
+				.filter(field => !field.startsWith('SELECT_ALL') && !field.startsWith('DESELECT_ALL') && field !== 'SEPARATOR')
+				.join('\n\t\t\t\t\t\t\t');
 
-				const shipmentDetailFields = shipmentDetailFieldsSelected
-					.filter(field => !field.startsWith('SELECT_ALL') && !field.startsWith('DESELECT_ALL') && field !== 'SEPARATOR')
-					.join('\n\t\t\t\t\t\t\t');
-
-				// Build the GraphQL query with nested response structure
-				const query = `
-					query orders ($orders_id: Int, $orders_products_id: Int, $order_product_status: Int, $store_id: String, $from_date: String, $to_date: String, $order_status: String, $customer_id: Int, $order_type: OrdersOrderTypeEnum, $limit: Int, $offset: Int) {
-						orders (orders_id: $orders_id, orders_products_id: $orders_products_id, order_product_status: $order_product_status, store_id: $store_id, from_date: $from_date, to_date: $to_date, order_status: $order_status, customer_id: $customer_id, order_type: $order_type, limit: $limit, offset: $offset) {
-							orders {
-								${orderFields}
-								${customerFields ? `customer { ${customerFields} }` : ''}
-								${productFields ? `product { ${productFields} }` : ''}
-								${blindDetailFields ? `blind_detail { ${blindDetailFields} }` : ''}
-								${deliveryDetailFields ? `delivery_detail { ${deliveryDetailFields} }` : ''}
-								${billingDetailFields ? `billing_detail { ${billingDetailFields} }` : ''}
-								${shipmentDetailFields ? `shipment_detail { ${shipmentDetailFields} }` : ''}
-							}
-							totalOrders
+			// Build the GraphQL query with nested response structure (always respect selections)
+			const query = `
+				query orders ($orders_id: Int, $orders_products_id: Int, $order_product_status: Int, $store_id: String, $from_date: String, $to_date: String, $order_status: String, $customer_id: Int, $order_type: OrdersOrderTypeEnum, $limit: Int, $offset: Int) {
+					orders (orders_id: $orders_id, orders_products_id: $orders_products_id, order_product_status: $order_product_status, store_id: $store_id, from_date: $from_date, to_date: $to_date, order_status: $order_status, customer_id: $customer_id, order_type: $order_type, limit: $limit, offset: $offset) {
+						orders {
+							${orderFields}
+							${customerFields ? `customer { ${customerFields} }` : ''}
+							${productFields ? `product { ${productFields} }` : ''}
+							${blindDetailFields ? `blind_detail { ${blindDetailFields} }` : ''}
+							${deliveryDetailFields ? `delivery_detail { ${deliveryDetailFields} }` : ''}
+							${billingDetailFields ? `billing_detail { ${billingDetailFields} }` : ''}
+							${shipmentDetailFields ? `shipment_detail { ${shipmentDetailFields} }` : ''}
 						}
+						totalOrders
 					}
-				`;
+				}
+			`;
 
 				let allOrders: IDataObject[] = [];
 				let totalOrders = 0;
@@ -7046,13 +7110,10 @@ export class OnPrintShop implements INodeType {
 							if (qp.from_date) variables.from_date = new Date(String(qp.from_date)).toISOString().split('T')[0];
 							if (qp.to_date) variables.to_date = new Date(String(qp.to_date)).toISOString().split('T')[0];
 							if (qp.order_status) variables.order_status = String(qp.order_status);
-							if (qp.customer_id !== undefined && qp.customer_id !== '') variables.customer_id = Number(qp.customer_id);
-							if (qp.order_type) variables.order_type = qp.order_type;
+					if (qp.customer_id !== undefined && qp.customer_id !== '') variables.customer_id = Number(qp.customer_id);
+					if (qp.order_type) variables.order_type = qp.order_type;
 
-						// Optional Safe Mode: reduce nested groups if first page fails with 5xx
-						const safeMode = (this.getNodeParameter('safeMode', i, false) as boolean) || false;
-
-						try {
+				try {
 							const responseData = await this.helpers.request({
 								method: 'POST',
 								url: `${baseUrl}/api/`,
@@ -7095,8 +7156,8 @@ export class OnPrintShop implements INodeType {
 									hasMorePages = false;
 								}
 								} else if (responseData && responseData.errors) {
-									// When safeMode is enabled and this is the first page, retry without nested groups
-									if (safeMode && pageCount === 0) {
+							// Legacy safeMode retry removed: always respect selected fields
+							if (false) {
 										const minimalQuery = `
 											query orders ($orders_id: Int, $orders_products_id: Int, $order_product_status: Int, $store_id: String, $from_date: String, $to_date: String, $order_status: String, $customer_id: Int, $order_type: OrdersOrderTypeEnum, $limit: Int, $offset: Int) {
 												orders (orders_id: $orders_id, orders_products_id: $orders_products_id, order_product_status: $order_product_status, store_id: $store_id, from_date: $from_date, to_date: $to_date, order_status: $order_status, customer_id: $customer_id, order_type: $order_type, limit: $limit, offset: $offset) {
